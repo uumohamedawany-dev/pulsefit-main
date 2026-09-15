@@ -50,6 +50,7 @@ function obfuscateProductionBundle() {
 }
 
 export default defineConfig({
+  base: '/pulsefit-main/',
   plugins: [react(), obfuscateProductionBundle()],
   resolve: {
     alias: {
