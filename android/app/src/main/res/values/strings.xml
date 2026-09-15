@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PulseFit</string>
+    <string name="title_activity_main">PulseFit</string>
+    <string name="package_name">com.pulsefit.app.awany</string>
+    <string name="custom_url_scheme">com.pulsefit.app.awany</string>
+</resources>

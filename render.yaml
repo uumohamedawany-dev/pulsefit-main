@@ -1,0 +1,22 @@
+services:
+  - type: worker
+    name: pulsefit-telegram-monitor
+    runtime: node
+    buildCommand: npm ci --legacy-peer-deps
+    startCommand: npm run telegram-monitor
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: PAYMENTS_BOT_TOKEN
+        sync: false
+      - key: MALES_BOT_TOKEN
+        sync: false
+      - key: FEMALES_BOT_TOKEN
+        sync: false
+      - key: REPORT_INTERVAL_MS
+        value: "3600000"

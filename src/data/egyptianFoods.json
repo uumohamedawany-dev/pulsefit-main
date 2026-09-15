@@ -1,0 +1,10 @@
+[
+  { "name": "فول مدمس (100 جرام)", "calories": 110, "protein_g": 8.0, "carbs_g": 20.0, "fats_g": 1.0, "type": "Meal", "recommended_goal": "Cutting" },
+  { "name": "كشري مصري (100 جرام)", "calories": 160, "protein_g": 6.0, "carbs_g": 30.0, "fats_g": 2.0, "type": "Meal", "recommended_goal": "Bulking" },
+  { "name": "جبنة قريش (100 جرام)", "calories": 98, "protein_g": 11.0, "carbs_g": 3.0, "fats_g": 4.0, "type": "Meal", "recommended_goal": "Cutting" },
+  { "name": "مكرونة بشاميل (100 جرام)", "calories": 180, "protein_g": 7.0, "carbs_g": 18.0, "fats_g": 9.0, "type": "Meal", "recommended_goal": "Bulking" },
+  { "name": "ترمس مسلوق (100 جرام)", "calories": 120, "protein_g": 11.0, "carbs_g": 13.0, "fats_g": 3.0, "type": "Snack", "recommended_goal": "Cutting" },
+  { "name": "بسكويت فريسكا (قطعة)", "calories": 130, "protein_g": 1.5, "carbs_g": 18.0, "fats_g": 6.0, "type": "Snack", "recommended_goal": "Bulking" },
+  { "name": "زبادي يوناني (100 جرام)", "calories": 80, "protein_g": 8.0, "carbs_g": 4.0, "fats_g": 3.0, "type": "Snack", "recommended_goal": "Cutting" },
+  { "name": "كفتة مشوية (100 جرام)", "calories": 220, "protein_g": 15.0, "carbs_g": 4.0, "fats_g": 16.0, "type": "Meal", "recommended_goal": "Cutting" }
+]

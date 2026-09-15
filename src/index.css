@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-bg-dark: #06070B;
+  --app-bg-light: #f8fafc;
+  --text-dark: #0f172a;
+  --text-light: #eefaff;
+  --card-dark: rgba(255,255,255,0.05);
+  --card-light: rgba(255,255,255,0.78);
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink-900 text-white antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    transition: background 0.35s ease, color 0.35s ease;
+  }
+
+  body.light {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  html.theme-female,
+  body.theme-female {
+    background: linear-gradient(135deg, rgba(76, 5, 36, 1), rgba(24, 24, 27, 1), rgba(0, 0, 0, 1));
+    color: #fff;
+  }
+
+  body.theme-female .glass-input::placeholder,
+  body.theme-female input::placeholder,
+  body.theme-female textarea::placeholder {
+    color: rgba(251, 113, 133, 0.6) !important;
+  }
+
+  html.theme-female body,
+  body.theme-female * {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  body.theme-female .glass-panel,
+  body.theme-female .glass-card,
+  body.theme-female .glass-nav,
+  body.theme-female .glass-input,
+  body.theme-female .rounded-2xl,
+  body.theme-female .rounded-3xl {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(251, 113, 133, 0.35) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.28) !important;
+  }
+
+  body.theme-female .glass-panel,
+  body.theme-female .glass-card,
+  body.theme-female .glass-nav,
+  body.theme-female .glass-input,
+  body.theme-female .text-white,
+  body.theme-female .text-white\/40,
+  body.theme-female .text-white\/50,
+  body.theme-female .text-white\/60,
+  body.theme-female .text-white\/70,
+  body.theme-female .text-white\/80,
+  body.theme-female .text-white\/90 {
+    color: rgba(255,255,255,0.96) !important;
+  }
+
+  body.theme-female .glass-input {
+    color: white !important;
+    border-width: 1px;
+  }
+
+  body.theme-female .text-neon-cyan,
+  body.theme-female .text-gradient-cyan,
+  body.theme-female .text-pink-300,
+  body.theme-female .text-pink-200,
+  body.theme-female .text-pink-100 {
+    color: #f9a8d4 !important;
+  }
+
+  body.theme-female .text-gradient-cyan {
+    background-image: linear-gradient(90deg, #f9a8d4 0%, #f472b6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+  }
+
+  body.theme-female .bg-neon-cyan,
+  body.theme-female .from-neon-cyan,
+  body.theme-female .to-neon-blue,
+  body.theme-female .bg-gradient-to-r.from-neon-cyan.to-neon-blue,
+  body.theme-female .bg-gradient-to-r.from-pink-500.to-rose-500,
+  body.theme-female .bg-gradient-to-r.from-pink-500.to-pink-400 {
+    background: linear-gradient(90deg, #f472b6, #ec4899) !important;
+  }
+
+  body.theme-female .bg-neon-orange,
+  body.theme-female .text-neon-orange {
+    color: #fb7185 !important;
+  }
+
+  body.theme-female .bg-neon-green,
+  body.theme-female .text-neon-green {
+    color: #f9a8d4 !important;
+  }
+
+  body.theme-female .text-neon-blue {
+    color: #f9a8d4 !important;
+  }
+
+  body.theme-female button {
+    transition: all 0.3s ease;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+
+  ::selection {
+    @apply bg-neon-cyan/30 text-white;
+  }
+}
+
+@layer components {
+  /* --- Glassmorphism Foundation --- */
+  .glass {
+    @apply bg-white/[0.03] border border-white/[0.06] backdrop-blur-2xl;
+  }
+
+  .glass-panel {
+    @apply bg-white/[0.04] border border-white/[0.07] backdrop-blur-2xl rounded-3xl;
+    box-shadow:
+      0 1px 0 0 rgba(255,255,255,0.04) inset,
+      0 -1px 0 0 rgba(0,0,0,0.1) inset,
+      0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .glass-card {
+    @apply bg-white/[0.05] border border-white/[0.08] backdrop-blur-xl rounded-2xl;
+    box-shadow:
+      0 1px 0 0 rgba(255,255,255,0.06) inset,
+      0 8px 24px rgba(0,0,0,0.25);
+  }
+
+  .glass-input {
+    @apply bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl rounded-2xl
+           text-white placeholder-white/30
+           focus:border-neon-cyan/40 focus:bg-white/[0.06]
+           transition-all duration-300 outline-none;
+  }
+
+  .glass-nav {
+    @apply bg-ink-800/60 border border-white/[0.06] backdrop-blur-3xl;
+  }
+
+  /* --- Neon Accents --- */
+  .neon-text-cyan {
+    text-shadow: 0 0 20px rgba(34, 245, 214, 0.4), 0 0 40px rgba(34, 245, 214, 0.15);
+  }
+
+  .neon-glow-cyan {
+    box-shadow: 0 0 20px rgba(34, 245, 214, 0.25), 0 0 60px rgba(34, 245, 214, 0.08);
+  }
+
+  .neon-glow-green {
+    box-shadow: 0 0 20px rgba(57, 255, 136, 0.25), 0 0 60px rgba(57, 255, 136, 0.08);
+  }
+
+  .neon-border-cyan {
+    box-shadow:
+      0 0 0 1px rgba(34, 245, 214, 0.2),
+      0 0 20px rgba(34, 245, 214, 0.15);
+  }
+
+  /* --- Gradient text --- */
+  .text-gradient-cyan {
+    @apply bg-gradient-to-r from-neon-cyan to-neon-blue bg-clip-text text-transparent;
+  }
+
+  .text-gradient-green {
+    @apply bg-gradient-to-r from-neon-green to-neon-cyan bg-clip-text text-transparent;
+  }
+
+  /* --- Ambient background orbs --- */
+  .bg-orb {
+    @apply absolute rounded-full blur-[100px] pointer-events-none;
+  }
+
+  /* --- Toggle switch --- */
+  .toggle-track {
+    @apply relative w-14 h-7 rounded-full transition-all duration-300;
+  }
+
+  .toggle-thumb {
+    @apply absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-lg transition-all duration-300;
+  }
+
+  .toggle-active .toggle-thumb {
+    transform: translateX(28px);
+  }
+
+  /* --- Shimmer effect for loading states --- */
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.02) 25%,
+      rgba(255,255,255,0.06) 50%,
+      rgba(255,255,255,0.02) 75%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .perspective {
+    perspective: 1000px;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
