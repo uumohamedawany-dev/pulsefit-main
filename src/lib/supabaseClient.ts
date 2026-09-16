@@ -1,10 +1,10 @@
 import { createClient, type User as SupabaseUser } from '@supabase/supabase-js';
 
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim() || 'https://xrpxpvlsrdcnhydozywj.supabase.co';
-export const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() || 'sb_publishable_X2P3Wj9qrdSzGUiyP_aRAQ_1skhLMay';
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() || 'sb_publishable_X2P3Wj9qrdSzGUiyP_aRAQ_1skhLMay';
 export const MASTER_ADMIN_EMAIL = 'uu.mohamed.awany@gmail.com';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -108,6 +108,29 @@ export interface SupabasePaymentPayload {
 
 export async function createPayment(payload: SupabasePaymentPayload) {
   return supabase.from('payments').insert({ ...payload, status: payload.status || 'pending' }).select().single();
+}
+
+export async function uploadPaymentProof(dataUrl: string, userId: string) {
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error('صورة التحويل غير صالحة.');
+  }
+
+  const mimeType = match[1];
+  const extension = mimeType.split('/')[1].replace('jpeg', 'jpg');
+  const bytes = Uint8Array.from(atob(match[2]), (character) => character.charCodeAt(0));
+  const path = `${userId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(path, bytes, {
+    contentType: mimeType,
+    upsert: false,
+  });
+
+  if (uploadError) {
+    throw new Error(`تعذر رفع صورة التحويل: ${uploadError.message}`);
+  }
+
+  const { data } = supabase.storage.from('payment-proofs').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export async function fetchUserPayments(userId: string) {

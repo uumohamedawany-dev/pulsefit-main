@@ -158,7 +158,7 @@ export function DietMealsScreen() {
   };
 
   return (
-    <div className="min-h-screen px-4 pb-28 pt-6 safe-top">
+    <div className="min-h-screen px-4 safe-content-bottom pt-6 safe-top">
       <div className="max-w-md mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -246,11 +246,11 @@ export function DietMealsScreen() {
 
         {nutritionSection === 'foods' ? <div className="space-y-3">
           {foods.map((food) => <FoodCard key={food.name} food={food} onClick={() => setSelectedFood(food)} />)}
-        </div> : <ProGate feature="قسم المشروبات المتخصصة"><div className="space-y-3">
+        </div> : <ProGate feature="Specialized drinks section"><div className="space-y-3">
           {drinks.map((drink) => <DrinkCard key={drink.id} drink={drink} isFavorite={favoriteDrinks.includes(drink.id)} onFavorite={() => toggleFavoriteDrink(drink.id)} onOpen={() => setSelectedDrink(drink)} onQuickLog={() => quickLogDrink(drink)} />)}
         </div></ProGate>}
 
-        <ProGate feature="حاسبة TDEE والماكروز الذكية"><OfflineMacrosCalculator /></ProGate>
+        <ProGate feature="Smart TDEE and macro calculator"><OfflineMacrosCalculator /></ProGate>
 
         {aiScanError && (
           <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-200">

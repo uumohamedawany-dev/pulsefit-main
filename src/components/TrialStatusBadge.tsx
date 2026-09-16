@@ -5,10 +5,10 @@ import { useApp } from '@/context/AppContext';
 import { isAdminUser } from '@/lib/api';
 import type { User } from '@/types';
 
-const TRIAL_DAYS = 30;
+const TRIAL_DAYS = 15;
 
 export function TrialStatusBadge() {
-  const { user } = useApp();
+  const { user, t } = useApp();
   const [isOpen, setIsOpen] = useState(false);
 
   if (!user) {
@@ -34,8 +34,8 @@ export function TrialStatusBadge() {
         }
       >
         {status.kind === 'pro' ? <Crown size={13} /> : <Sparkles size={13} />}
-        <span>{status.kind === 'pro' ? 'PRO' : 'Freemium (Trial)'}</span>
-        {status.kind === 'trial' && <span className="text-amber-200/80">• {status.days} يوم</span>}
+        <span>{status.kind === 'pro' ? 'PRO' : t('Freemium (Trial)')}</span>
+        {status.kind === 'trial' && <span className="text-amber-200/80">• {status.days} {t('days')}</span>}
       </button>
 
       {isOpen && status.kind === 'trial' && (

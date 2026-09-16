@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Activity, HeartPulse, Flower2, Flame, Calendar, Dumbbell, Shield, Snowflake } from 'lucide-react';
 import { GlassPanel } from '@/components/GlassUI';
 import { useApp } from '@/context/AppContext';
+import { notifyPeriodFreeze } from '@/lib/api';
 
 type CyclePhase = 'Menstrual' | 'Follicular' | 'Ovulation' | 'Luteal';
 
@@ -18,6 +19,33 @@ export function CycleTracker() {
   const [lastPeriodStart, setLastPeriodStart] = useState(() => new Date().toISOString().slice(0, 10));
   const [cycleLength, setCycleLength] = useState(28);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [freezeStatus, setFreezeStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [freezeMessage, setFreezeMessage] = useState('');
+
+  const requestFreeze = async (days: number) => {
+    if (!user) return;
+    setFreezeStatus('sending');
+    setFreezeMessage('');
+    try {
+      await notifyPeriodFreeze({
+        userId: user.id || user.publicUserId,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        age: user.age,
+        governorate: user.governorate,
+        height: user.height,
+        weight: user.weight,
+        startDate: new Date().toISOString(),
+        durationDays: days,
+      });
+      activateStreakSaver(days);
+      setShowDurationPicker(false);
+      setFreezeStatus('success');
+      setFreezeMessage(t('Your freeze request was sent to support successfully.'));
+    } catch (error) {
+      setFreezeStatus('error');
+      setFreezeMessage(error instanceof Error ? error.message : t('The freeze request could not be sent. Please try again.'));
+    }
+  };
 
   const cycleInfo = useMemo(() => {
     const start = new Date(lastPeriodStart);
@@ -112,6 +140,7 @@ export function CycleTracker() {
             <button
               type="button"
               onClick={() => setShowDurationPicker((value) => !value)}
+              disabled={freezeStatus === 'sending'}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-3 text-sm font-bold text-white shadow-[0_0_28px_rgba(236,72,153,0.35)] transition hover:scale-[1.01]"
             >
               <Shield size={16} />
@@ -127,8 +156,7 @@ export function CycleTracker() {
                       key={days}
                       type="button"
                       onClick={() => {
-                        activateStreakSaver(days);
-                        setShowDurationPicker(false);
+                        void requestFreeze(days);
                       }}
                       className="rounded-xl border border-pink-400/30 bg-white/5 px-2 py-2 text-xs font-semibold text-pink-100 transition hover:border-pink-300 hover:bg-pink-400/10"
                     >
@@ -164,6 +192,7 @@ export function CycleTracker() {
             </button>
           </div>
         )}
+        {freezeMessage && <p className={`mt-3 rounded-xl border px-3 py-2 text-xs ${freezeStatus === 'error' ? 'border-red-400/30 bg-red-500/10 text-red-200' : 'border-pink-400/30 bg-pink-500/10 text-pink-100'}`}>{freezeMessage}</p>}
       </div>
     </GlassPanel>
     ) : null

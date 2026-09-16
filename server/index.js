@@ -71,13 +71,15 @@ function normalizeUser(input = {}) {
     age: Number(input.age) || 0,
     governorate: String(input.governorate || '').trim() || null,
     streakDays: Number(input.streakDays) || 0,
+    completedWorkouts: Number(input.completedWorkouts) || 0,
+    goalsCompleted: Number(input.goalsCompleted) || 0,
     points: Number(input.points) || 0,
     badges: Array.isArray(input.badges) ? input.badges.filter((badge) => typeof badge === 'string') : [],
     signupSource: input.signupSource || 'pulsefit-web',
     goal: input.goal || 'maintenance',
     subscriptionPlan: input.subscriptionPlan || null,
     subscriptionStatus: input.subscriptionStatus || 'trial',
-    subscriptionExpiresAt: input.subscriptionExpiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    subscriptionExpiresAt: input.subscriptionExpiresAt || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       streakFrozen: Boolean(input.streakFrozen),
       streakFreezeDays: Math.max(0, Number(input.streakFreezeDays) || 0),
       streakFrozenAt: input.streakFrozenAt || null,
@@ -319,7 +321,7 @@ async function notifyTelegramRegistration(user) {
 }
 
 async function relayDeveloperContact(payload) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN || DEFAULT_TELEGRAM_BOT_TOKEN;
+  const botToken = process.env.CONTACT_DEVELOPER_BOT_TOKEN || '';
   const chatId = process.env.TELEGRAM_CHAT_ID || DEFAULT_TELEGRAM_CHAT_ID;
 
   const message = String(payload.message || '').trim();
@@ -364,10 +366,37 @@ async function relaySubscriptionReceipt(request) {
   const form = new FormData();
   form.append('chat_id', DEFAULT_TELEGRAM_CHAT_ID);
   form.append('caption', `🔔 طلب اشتراك ${request.planLabel} جديد للمراجعة\n\n👤 Username: ${request.username}\n📧 Email: ${request.email}\n💳 الخطة: ${request.planLabel}`);
+  form.append('reply_markup', JSON.stringify({ inline_keyboard: [[
+    { text: '✅ قبول (Approve)', callback_data: `approve_${request.userId || request.email}_${request.paymentId || request.id}` },
+    { text: '❌ رفض (Decline)', callback_data: `decline_${request.userId || request.email}_${request.paymentId || request.id}` },
+  ]] }));
   form.append('photo', new Blob([Buffer.from(receiptMatch[2], 'base64')], { type: receiptMatch[1] }), 'transfer-receipt.jpg');
 
   const response = await fetch(`https://api.telegram.org/bot${DEFAULT_TELEGRAM_BOT_TOKEN}/sendPhoto`, { method: 'POST', body: form });
   return response.ok;
+}
+
+async function storeSubscriptionReceipt(request) {
+  const match = String(request.receiptDataUrl || '').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+
+  const headers = { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' };
+  const bucketResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket/payment-proofs`, { headers });
+  if (bucketResponse.status === 404) {
+    const createResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, { method: 'POST', headers, body: JSON.stringify({ id: 'payment-proofs', name: 'payment-proofs', public: false, file_size_limit: 7340032, allowed_mime_types: ['image/png', 'image/jpeg', 'image/webp'] }) });
+    if (!createResponse.ok && createResponse.status !== 409) throw new Error('Unable to create the payment-proofs storage bucket.');
+  } else if (!bucketResponse.ok) {
+    throw new Error('Unable to check the payment-proofs storage bucket.');
+  } else {
+    const updateResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket/payment-proofs`, { method: 'PUT', headers, body: JSON.stringify({ public: false, file_size_limit: 7340032, allowed_mime_types: ['image/png', 'image/jpeg', 'image/webp'] }) });
+    if (!updateResponse.ok) throw new Error('Unable to make the payment-proofs bucket private.');
+  }
+
+  const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
+  const path = `${request.email.replace(/[^a-z0-9@._-]/gi, '_')}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const uploadResponse = await fetch(`${SUPABASE_URL}/storage/v1/object/payment-proofs/${encodeURIComponent(path)}`, { method: 'POST', headers: { ...headers, 'Content-Type': match[1], 'x-upsert': 'false' }, body: Buffer.from(match[2], 'base64') });
+  if (!uploadResponse.ok) throw new Error('Unable to upload the payment proof to Supabase Storage.');
+  return path;
 }
 
 function subscriptionPlanLabel(plan) {
@@ -583,9 +612,11 @@ app.post('/api/subscriptions/request', async (req, res) => {
       createdAt: new Date().toISOString(),
     };
     subscriptionRequests.set(request.id, request);
+    let receiptUrl = null;
+    try { receiptUrl = await storeSubscriptionReceipt(request); } catch (error) { console.error('[subscription storage]', error); }
     let telegramSent = false;
     try { telegramSent = await relaySubscriptionReceipt(request); } catch (error) { console.error('[subscription telegram]', error); }
-    return res.json({ success: true, message: telegramSent ? 'تم استلام الطلب وبعتناه للمراجعة على تيليجرام.' : 'تم استلام طلبك للمراجعة.', telegramSent });
+    return res.json({ success: true, receiptUrl, message: telegramSent ? 'تم استلام الطلب وبعتناه للمراجعة على تيليجرام.' : 'تم استلام طلبك للمراجعة.', telegramSent });
   } catch (error) {
     console.error('[subscription request]', error);
     return res.status(500).json({ success: false, message: 'حصل خطأ في إرسال طلب الاشتراك.' });
@@ -968,6 +999,8 @@ app.put('/api/auth/profile', (req, res) => {
       age: Number(body.age) || existingUser.age || 0,
       governorate: String(body.governorate || existingUser.governorate || '').trim() || null,
       streakDays: Number(body.streakDays) || existingUser.streakDays || 0,
+      completedWorkouts: Number(body.completedWorkouts) >= 0 ? Number(body.completedWorkouts) : existingUser.completedWorkouts || 0,
+      goalsCompleted: Number(body.goalsCompleted) >= 0 ? Number(body.goalsCompleted) : existingUser.goalsCompleted || 0,
       points: Number(body.points) >= 0 ? Number(body.points) : existingUser.points || 0,
       badges: Array.isArray(body.badges) ? body.badges.filter((badge) => typeof badge === 'string') : existingUser.badges || [],
       goal: body.goal || existingUser.goal || 'maintenance',

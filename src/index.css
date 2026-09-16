@@ -238,9 +238,12 @@
   }
 
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
   .safe-top {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .safe-content-bottom {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom));
   }
 }

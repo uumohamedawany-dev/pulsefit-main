@@ -23,6 +23,8 @@ export interface User {
   height?: number;
   age?: number;
   streakDays?: number;
+  completedWorkouts?: number;
+  goalsCompleted?: number;
   points?: number;
   badges?: string[];
   subscriptionPlan?: SubscriptionPlan;

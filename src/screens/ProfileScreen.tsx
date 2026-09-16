@@ -16,7 +16,7 @@ import { ProGate } from '@/components/ProGate';
 import { isAdminUser } from '@/lib/api';
 
 export function ProfileScreen() {
-  const { user, logout, theme, inBodyRecords, addInBodyRecord, appMode, setAppMode, onboardingProfile, securitySettings, updateSecuritySettings, dailyStats, streakDays, setScreen, toggleLanguage, language, t } = useApp();
+  const { user, logout, theme, inBodyRecords, addInBodyRecord, appMode, setAppMode, onboardingProfile, securitySettings, updateSecuritySettings, dailyStats, streakDays, completedWorkouts, goalsCompleted, setScreen, toggleLanguage, language, t } = useApp();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { requestMediaPermission, showPermissionAlert } = usePermissions();
   const [notifications, setNotifications] = useState(true);
@@ -269,6 +269,8 @@ export function ProfileScreen() {
       const response = await submitDeveloperContact({
         name: contactForm.name.trim(),
         email: contactForm.email.trim(),
+        userId: user?.id || user?.publicUserId,
+        user_id: user?.id || user?.publicUserId,
         message,
         platform: 'pulsefit-web',
       });
@@ -284,12 +286,12 @@ export function ProfileScreen() {
   };
 
   return (
-    <div className="min-h-screen pb-28 px-4 pt-6 safe-top">
+    <div className="min-h-screen safe-content-bottom px-4 pt-6 safe-top">
       <div className="max-w-md mx-auto space-y-5">
         {/* Header */}
         <div className="animate-fade-in-down">
-          <h1 className="font-display text-2xl font-bold text-white">Profile</h1>
-          <p className="text-white/40 text-sm mt-0.5">Manage your account and preferences</p>
+          <h1 className="font-display text-2xl font-bold text-white">{t('Profile')}</h1>
+          <p className="text-white/40 text-sm mt-0.5">{t('Manage your account and preferences')}</p>
         </div>
 
         {/* Profile card */}
@@ -324,21 +326,21 @@ export function ProfileScreen() {
             {user?.firstName} {user?.lastName}
           </h2>
           <p className="text-sm text-white/40 mt-1">{user?.email}</p>
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
             <button type="button" onClick={() => setSubscriptionOpen(true)} className="text-xs font-medium px-3 py-1 rounded-full bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20 transition hover:bg-neon-cyan/20">
-              Pro Member
+              {t('Pro Member')}
             </button>
             <span className="text-xs font-medium px-3 py-1 rounded-full bg-white/[0.05] text-white/50 border border-white/[0.08]">
-              12-week streak
+              {streakDays} {t('day streak')}
             </span>
           </div>
         </GlassPanel>
 
         {/* Stats grid */}
         <div className="grid grid-cols-3 gap-3 animate-fade-in-up">
-          <StatCard icon={Flame} label="Streak" value="42" sub="days" color="neon-orange" />
-          <StatCard icon={Dumbbell} label="Workouts" value="186" sub="total" color="neon-cyan" />
-          <StatCard icon={Award} label="Goals" value="8" sub="hit" color="neon-green" />
+          <StatCard icon={Flame} label={t('Streak')} value={String(streakDays)} sub={t('days')} color="neon-orange" />
+          <StatCard icon={Dumbbell} label={t('Workouts')} value={String(completedWorkouts)} sub={t('total')} color="neon-cyan" />
+          <StatCard icon={Award} label={t('Goals')} value={String(goalsCompleted)} sub={t('hit')} color="neon-green" />
         </div>
 
         {/* Fitness goals */}
@@ -377,7 +379,7 @@ export function ProfileScreen() {
           <div className="mb-3 flex items-center justify-between px-1">
             <h2 className="text-sm font-semibold text-white">{t('Settings')}</h2>
             <button type="button" onClick={toggleLanguage} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70 transition hover:text-white">
-              {language === 'en' ? 'العربية' : 'English'}
+              {language === 'en' ? t('Switch to Arabic') : t('Switch to English')}
             </button>
           </div>
           <GlassPanel className="divide-y divide-white/[0.04] overflow-hidden">

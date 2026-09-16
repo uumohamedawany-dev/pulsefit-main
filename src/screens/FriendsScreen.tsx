@@ -80,7 +80,7 @@ export function FriendsScreen() {
   };
 
   return (
-    <div className="min-h-screen px-4 pb-28 pt-6 safe-top">
+    <div className="min-h-screen px-4 safe-content-bottom pt-6 safe-top">
       <div className="mx-auto max-w-md space-y-4">
         <div className="flex items-center justify-between">
           <div>

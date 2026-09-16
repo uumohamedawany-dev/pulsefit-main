@@ -230,26 +230,28 @@ export function DashboardScreen() {
   }
 
   return (
-    <div className="min-h-screen pb-28 px-4 pt-6 safe-top">
+    <div className="min-h-screen safe-content-bottom px-4 pt-6 safe-top">
       <div className="max-w-md mx-auto space-y-5">
-        <div className="flex items-center justify-between animate-fade-in-down">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-3 animate-fade-in-down">
+          <div className="min-w-0 flex-1">
             <p className="text-white/40 text-sm">{getGreeting()}</p>
             <h1 className="font-display text-2xl font-bold text-white mt-0.5">
               Welcome, <span className="text-white font-bold">{user?.firstName}</span>!
             </h1>
           </div>
-          <TrialStatusBadge />
-          <NotificationCenter />
-          {user?.avatar || user?.profilePicture ? (
-            <img
-              src={user.avatar ?? user.profilePicture ?? undefined}
-              alt={`${user?.firstName ?? 'User'} avatar`}
-              className="h-12 w-12 rounded-2xl object-cover border border-white/10"
-            />
-          ) : (
-            <DefaultAvatar gender={appMode} size="sm" />
-          )}
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <TrialStatusBadge />
+            <NotificationCenter />
+            {user?.avatar || user?.profilePicture ? (
+              <img
+                src={user.avatar ?? user.profilePicture ?? undefined}
+                alt={`${user?.firstName ?? 'User'} avatar`}
+                className="h-12 w-12 rounded-2xl object-cover border border-white/10"
+              />
+            ) : (
+              <DefaultAvatar gender={appMode} size="sm" />
+            )}
+          </div>
         </div>
 
         {appMode === 'female' && <CycleTracker />}

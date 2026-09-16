@@ -2,13 +2,32 @@ import { useEffect, useState } from 'react';
 import { Mail, Lock, User as UserIcon, Fingerprint, ArrowRight, Eye, EyeOff, Dumbbell, Mars, Venus } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { usePermissions } from '@/hooks/usePermissions';
-import { ensureSupabaseMasterAdminAuth, loginUser, persistAuthSession, registerUser, resendOtp, verifyOtp } from '@/lib/api';
+import { ensureSupabaseMasterAdminAuth, loginUser, notifyTelegramRegistration, persistAuthSession, registerUser, resendOtp, verifyOtp } from '@/lib/api';
 import { ensureMasterAdminProfile, mapSupabaseUser, MASTER_ADMIN_EMAIL, signInWithPassword as supabaseSignIn, signUp as supabaseSignUp, upsertUserProfile } from '@/lib/supabaseClient';
 import type { AuthMode, MacroGoal } from '@/types';
 import { DarkSelect, NumberStepper } from '@/components/FormControls';
+import { EmailVerifiedScreen } from '@/components/EmailVerifiedScreen';
+import { supabase } from '@/lib/supabaseClient';
 
 const egyptianGovernorates = ['Cairo', 'Giza', 'Alexandria', 'Qalyubia', 'Monufia', 'Beheira', 'Gharbia', 'Kafr El Sheikh', 'Dakahlia', 'Damietta', 'Sharqia', 'Ismailia', 'Port Said', 'Suez', 'North Sinai', 'South Sinai', 'Fayoum', 'Beni Suef', 'Minya', 'Assiut', 'Sohag', 'Qena', 'Luxor', 'Aswan', 'New Valley', 'Matrouh', 'Red Sea'];
 const MASTER_ADMIN_PASSWORD = 'uuadmin17092008';
+const DEVICE_ACCOUNT_KEY = 'pulsefit.deviceAccountRegistered';
+
+function hasRegisteredDeviceAccount() {
+  try {
+    return window.localStorage.getItem(DEVICE_ACCOUNT_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function markDeviceAccountRegistered() {
+  try {
+    window.localStorage.setItem(DEVICE_ACCOUNT_KEY, 'true');
+  } catch {
+    // A restricted storage context should not block an otherwise valid signup.
+  }
+}
 
 function getSignInErrorMessage(error: { code?: string; message?: string }) {
   switch (error.code) {
@@ -64,6 +83,62 @@ export function AuthScreen() {
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [resendingOtp, setResendingOtp] = useState(false);
   const [pendingVerification, setPendingVerification] = useState<{ email: string; userId?: string; firstName: string; lastName: string; isSignup?: boolean } | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [redirectSeconds, setRedirectSeconds] = useState(3);
+  const [verifiedUser, setVerifiedUser] = useState<ReturnType<typeof mapSupabaseUser> | null>(null);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const isSupabaseCallback = searchParams.get('type') === 'signup'
+      || hashParams.get('type') === 'signup'
+      || searchParams.has('code');
+
+    if (!isSupabaseCallback) {
+      return;
+    }
+
+    let active = true;
+    const showVerifiedSession = (user: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>['user']) => {
+      if (!active) {
+        return;
+      }
+
+      setVerifiedUser(mapSupabaseUser(user));
+      setEmailVerified(true);
+    };
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        showVerifiedSession(session.user);
+      }
+    });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        showVerifiedSession(data.session.user);
+      }
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!emailVerified || !verifiedUser) {
+      return;
+    }
+
+    if (redirectSeconds <= 0) {
+      login(verifiedUser, 'signup');
+      return;
+    }
+
+    const timer = window.setTimeout(() => setRedirectSeconds((current) => current - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [emailVerified, login, redirectSeconds, verifiedUser]);
 
   useEffect(() => {
     if (!pendingVerification) {
@@ -81,6 +156,10 @@ export function AuthScreen() {
 
     return () => window.clearTimeout(timer);
   }, [otpCountdown, pendingVerification]);
+
+  if (emailVerified && verifiedUser) {
+    return <EmailVerifiedScreen secondsRemaining={redirectSeconds} onContinue={() => login(verifiedUser, 'signup')} />;
+  }
 
   const createUserFromResponse = (responseUser?: { id?: string; publicUserId?: string; governorate?: string | null; createdAt?: string; firstName?: string; lastName?: string; email?: string; avatar?: string | null; profilePicture?: string | null; gender?: 'male' | 'female'; weight?: number; height?: number; age?: number; streakDays?: number; points?: number; badges?: string[]; subscriptionPlan?: 'monthly' | 'yearly' | 'lifetime'; subscriptionStatus?: 'trial' | 'active' | 'expired' | 'pending'; subscriptionExpiresAt?: string | null; goal?: MacroGoal }) => ({
     id: responseUser?.id,
@@ -110,6 +189,11 @@ export function AuthScreen() {
 
     if (!email || !password || (mode === 'signup' && !firstName.trim())) {
       setApiError('Please complete all required fields before continuing.');
+      return;
+    }
+
+    if (mode === 'signup' && email.trim().toLowerCase() !== MASTER_ADMIN_EMAIL && hasRegisteredDeviceAccount()) {
+      setApiError('Only one account is allowed per device.');
       return;
     }
 
@@ -190,6 +274,7 @@ export function AuthScreen() {
 
           if (!supabaseResponse.error && supabaseResponse.data.user) {
             const profile = mapSupabaseUser(supabaseResponse.data.user);
+            void notifyTelegramRegistration({ userId: supabaseResponse.data.user.id, firstName, lastName, email, gender, age, height, weight, governorate: governorate || null }).catch(() => undefined);
             await upsertUserProfile({
               user_id: supabaseResponse.data.user.id,
               email,
@@ -207,6 +292,7 @@ export function AuthScreen() {
             if (supabaseResponse.data.session) {
               login(profile, 'signup');
             } else {
+              markDeviceAccountRegistered();
               setApiError('Account created. Check your email and confirm your account before signing in.');
             }
             return;
@@ -235,6 +321,10 @@ export function AuthScreen() {
         }
 
         if (response.requiresOtp) {
+          if (response.user?.id) {
+            void notifyTelegramRegistration({ userId: response.user.id, firstName, lastName, email, gender, age, height, weight, governorate: governorate || null }).catch(() => undefined);
+          }
+          markDeviceAccountRegistered();
           setPendingVerification({
             email: response.email || email,
             userId: response.userId,
@@ -250,6 +340,7 @@ export function AuthScreen() {
         }
 
         persistAuthSession(response.token);
+        markDeviceAccountRegistered();
         setAppMode(gender);
         login(createUserFromResponse(response.user), 'signup');
         return;
@@ -422,7 +513,7 @@ export function AuthScreen() {
         {/* Main Card */}
         <div style={{ backgroundColor: 'rgba(18, 18, 23, 0.6)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '22px 16px', boxShadow: '0 25px 50px rgba(0,0,0,0.7), 0 0 30px rgba(139,92,246,0.05)', overflow: 'hidden' }}>
           <button type="button" onClick={toggleLanguage} style={{ display: 'block', marginLeft: 'auto', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 10px', background: 'rgba(255,255,255,0.04)', color: '#d4d4d8', fontSize: '11px', cursor: 'pointer' }}>
-            {language === 'en' ? 'العربية' : 'English'}
+            {language === 'en' ? t('Switch to Arabic') : t('Switch to English')}
           </button>
           
           {/* Mode toggle */}

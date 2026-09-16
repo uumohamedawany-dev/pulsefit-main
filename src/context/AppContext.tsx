@@ -32,6 +32,8 @@ interface AppState {
   t: (key: string, fallback?: string) => string;
   appMode: AppMode;
   streakDays: number;
+  completedWorkouts: number;
+  goalsCompleted: number;
   isStreakSaverActive: boolean;
   streakSaverDays: number;
   dailyStats: DailyStats;
@@ -146,6 +148,8 @@ const readStoredUser = (): User | null => {
       height: Number(parsed.height) > 0 ? Number(parsed.height) : undefined,
       age: Number(parsed.age) > 0 ? Number(parsed.age) : undefined,
       streakDays: Number(parsed.streakDays) > 0 ? Number(parsed.streakDays) : 0,
+      completedWorkouts: Number(parsed.completedWorkouts) > 0 ? Number(parsed.completedWorkouts) : 0,
+      goalsCompleted: Number(parsed.goalsCompleted) > 0 ? Number(parsed.goalsCompleted) : 0,
       points: Number(parsed.points) >= 0 ? Number(parsed.points) : 0,
       badges: Array.isArray(parsed.badges) ? parsed.badges.filter((badge): badge is string => typeof badge === 'string') : [],
       subscriptionPlan: parsed.subscriptionPlan,
@@ -268,6 +272,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   });
   const [streakDays, setStreakDays] = useState<number>(() => Number(safeReadStorage('pulsefit.streakDays') ?? '0'));
+  const [completedWorkouts, setCompletedWorkouts] = useState<number>(() => Number(safeReadStorage('pulsefit.completedWorkouts') ?? '0'));
+  const [goalsCompleted, setGoalsCompleted] = useState<number>(() => Number(safeReadStorage('pulsefit.goalsCompleted') ?? '0'));
   const [isStreakSaverActive, setIsStreakSaverActive] = useState<boolean>(() => safeReadStorage('pulsefit.streakSaverActive') === 'true' && readStoredOnboardingProfile()?.gender === 'female');
   const [streakSaverDays, setStreakSaverDays] = useState<number>(() => {
     const saved = Number(safeReadStorage('pulsefit.streakSaverDays') ?? safeReadStorage('pulsefit.streakSaverDaysRemaining') ?? '0');
@@ -465,6 +471,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         height: onboardingProfile.height,
         age: onboardingProfile.age,
         streakDays,
+        completedWorkouts,
+        goalsCompleted,
         points,
         badges,
         goal: onboardingProfile.goal,
@@ -493,7 +501,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       setIsOffline(true);
     }
-  }, [badges, dailyStats.activeCalories, dailyStats.sleepHours, dailyStats.steps, isOffline, isStreakSaverActive, onboardingProfile, pendingActivities, points, streakDays, streakFrozenAt, streakSaverDays, user]);
+  }, [badges, completedWorkouts, dailyStats.activeCalories, dailyStats.sleepHours, dailyStats.steps, goalsCompleted, isOffline, isStreakSaverActive, onboardingProfile, pendingActivities, points, streakDays, streakFrozenAt, streakSaverDays, user]);
 
   const refreshUserProfile = useCallback(async () => {
     if (!user?.email || isOffline) return;
@@ -512,6 +520,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [isOffline, syncLocalState, user?.email]);
 
   const login = useCallback((u: User, mode: AuthMode = 'login') => {
+    safeWriteStorage('pulsefit.deviceAccountRegistered', 'true');
     const storedProfile = readStoredOnboardingProfile();
     const hydratedUser: User = {
       ...u,
@@ -520,6 +529,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       height: Number(u.height) > 0 ? Number(u.height) : storedProfile?.height,
       age: Number(u.age) > 0 ? Number(u.age) : storedProfile?.age,
       streakDays: Number(u.streakDays) > 0 ? Number(u.streakDays) : storedProfile ? 0 : u.streakDays,
+      completedWorkouts: Number(u.completedWorkouts) >= 0 ? Number(u.completedWorkouts) : completedWorkouts,
+      goalsCompleted: Number(u.goalsCompleted) >= 0 ? Number(u.goalsCompleted) : goalsCompleted,
       points: Number(u.points) >= 0 ? Number(u.points) : points,
       badges: Array.isArray(u.badges) ? u.badges : badges,
       goal: u.goal ?? storedProfile?.goal ?? 'maintenance',
@@ -626,6 +637,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const completeWorkout = useCallback(() => {
+    setCompletedWorkouts((current) => {
+      const next = current + 1;
+      safeWriteStorage('pulsefit.completedWorkouts', String(next));
+      return next;
+    });
     setPoints((value) => value + 25);
     setDailyStats((current) => ({ ...current, activeCalories: current.activeCalories + 25 }));
     queueActivity({ type: 'workout' });
@@ -823,6 +839,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         t,
         appMode,
         streakDays,
+        completedWorkouts,
+        goalsCompleted,
         isStreakSaverActive,
         streakSaverDays,
         dailyStats,

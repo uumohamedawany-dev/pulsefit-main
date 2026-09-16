@@ -1,4 +1,5 @@
 import { saveSecureSessionToken, safeReadStorage, safeWriteStorage } from '@/lib/permissions';
+import { supabase } from '@/lib/supabaseClient';
 import type { SubscriptionPlan } from '@/types';
 
 export interface AuthApiUser {
@@ -13,6 +14,8 @@ export interface AuthApiUser {
   id?: string;
   points?: number;
   badges?: string[];
+  completedWorkouts?: number;
+  goalsCompleted?: number;
   subscriptionPlan?: SubscriptionPlan;
   subscriptionStatus?: 'trial' | 'active' | 'expired' | 'pending';
   subscriptionExpiresAt?: string | null;
@@ -41,6 +44,8 @@ export interface RegisterPayload {
   streakDays?: number;
   points?: number;
   badges?: string[];
+  completedWorkouts?: number;
+  goalsCompleted?: number;
   signupSource?: string;
   governorate?: string;
 }
@@ -118,6 +123,8 @@ export interface ResendOtpPayload {
 export interface ContactDeveloperPayload {
   name?: string;
   email?: string;
+  userId?: string;
+  user_id?: string;
   message: string;
   platform?: string;
 }
@@ -175,6 +182,7 @@ export interface SubscriptionRequest {
   receiptDataUrl: string;
   status: 'pending' | 'approved' | 'declined';
   createdAt: string;
+  receiptPath?: string | null;
 }
 
 export interface AdminUserUpdatePayload {
@@ -245,12 +253,14 @@ async function requestJson<T>(endpoint: string, init?: RequestInit): Promise<T> 
   const baseUrl = getApiBaseUrl();
 
   try {
+    const { data: sessionData } = await supabase.auth.getSession();
     const response = await fetch(`${baseUrl}${endpoint}`, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
         ...(safeReadStorage('pulsefit.adminEmail') ? { 'X-Admin-Email': safeReadStorage('pulsefit.adminEmail') as string } : {}),
         ...(safeReadStorage('pulsefit.authToken') ? { Authorization: `Bearer ${safeReadStorage('pulsefit.authToken')}` } : {}),
+        ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
         ...(init?.headers ?? {}),
       },
     });
@@ -302,6 +312,8 @@ export async function updateUserProfile(payload: ProfileUpdatePayload): Promise<
     height: payload.height ?? 0,
     age: payload.age ?? 0,
     streakDays: payload.streakDays ?? 0,
+    completedWorkouts: payload.completedWorkouts ?? 0,
+    goalsCompleted: payload.goalsCompleted ?? 0,
     goal: payload.goal || 'maintenance',
     deviceInfo: getDeviceInfo(),
     timestamp: new Date().toISOString(),
@@ -487,8 +499,21 @@ export async function broadcastAdminAnnouncement(message: string): Promise<{ suc
   });
 }
 
-export async function submitSubscriptionRequest(payload: { email: string; username: string; plan: SubscriptionPlan; receiptDataUrl: string }): Promise<{ success: boolean; message?: string }> {
-  return requestJson<{ success: boolean; message?: string }>('/api/subscriptions/request', { method: 'POST', body: JSON.stringify(payload) });
+export async function submitSubscriptionRequest(payload: { email: string; username: string; plan: SubscriptionPlan; receiptDataUrl: string; accessToken?: string }): Promise<{ success: boolean; message?: string; receiptUrl?: string }> {
+  const { accessToken, ...body } = payload;
+  return requestJson<{ success: boolean; message?: string; receiptUrl?: string }>('/api/subscriptions/request', {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    body: JSON.stringify(body),
+  });
+}
+
+export async function notifyTelegramRegistration(payload: { userId: string; firstName: string; lastName?: string; email: string; gender: 'male' | 'female'; age?: number; height?: number; weight?: number; governorate?: string | null }): Promise<void> {
+  await requestJson('/api/telegram/user', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function notifyPeriodFreeze(payload: { userId?: string; name: string; age?: number; governorate?: string | null; height?: number; weight?: number; startDate: string; durationDays: number }): Promise<{ success: boolean; message?: string }> {
+  return requestJson<{ success: boolean; message?: string }>('/api/telegram/period-freeze', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export async function fetchSubscriptionRequests(): Promise<SubscriptionRequest[]> {

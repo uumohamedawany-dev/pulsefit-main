@@ -17,7 +17,7 @@ export function BottomNav() {
   const femaleMode = appMode === 'female';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center safe-bottom pb-2">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center safe-bottom px-2 pb-2">
       <nav className={`rounded-3xl px-3 py-2 mx-4 mb-2 flex w-full max-w-md items-center gap-1 ${femaleMode ? 'bg-black/60 backdrop-blur-xl border border-pink-500/20 shadow-[0_-8px_24px_rgba(236,72,153,0.18)]' : 'bg-black/60 backdrop-blur-xl border-t border-zinc-800 shadow-[0_-8px_24px_rgba(24,24,27,0.28)]'}`}>
         {navItems.map(({ screen, label, icon: Icon }) => {
           const active = currentScreen === screen;

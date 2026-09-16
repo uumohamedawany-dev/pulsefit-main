@@ -212,7 +212,7 @@ export function AdminScreen() {
   }
 
   return (
-    <div className="min-h-screen px-4 pb-28 pt-6 safe-top">
+    <div className="min-h-screen px-4 safe-content-bottom pt-6 safe-top">
       <div className="mx-auto max-w-5xl space-y-5">
         <div className="flex items-center justify-between gap-3">
           <div>

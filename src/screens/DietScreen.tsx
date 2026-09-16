@@ -38,7 +38,7 @@ export function DietScreen() {
   };
 
   return (
-    <div className="min-h-screen pb-28 px-4 pt-6 safe-top">
+    <div className="min-h-screen safe-content-bottom px-4 pt-6 safe-top">
       <div className="max-w-md mx-auto space-y-5">
         {/* Header */}
         <div className="animate-fade-in-down">
@@ -93,7 +93,7 @@ export function DietScreen() {
           </div>
         </GlassPanel>
 
-        <ProGate feature="حاسبة TDEE والماكروز الذكية"><OfflineMacrosCalculator /></ProGate>
+        <ProGate feature="Smart TDEE and macro calculator"><OfflineMacrosCalculator /></ProGate>
 
         {/* Meal log */}
         <div className="animate-fade-in-up">
